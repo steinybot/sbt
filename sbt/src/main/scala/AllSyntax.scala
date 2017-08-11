@@ -20,5 +20,5 @@ private[sbt] trait Alternative[A, B] {
 }
 
 private[sbt] trait IOSyntax1 {
-  implicit def singleFileFinder(file: File): sbt.io.PathFinder = sbt.io.PathFinder(file)
+  implicit def singleFileFinder(file: java.io.File): sbt.io.PathFinder = sbt.io.PathFinder(file)
 }
