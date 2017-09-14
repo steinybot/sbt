@@ -20,7 +20,7 @@ object DocsPlugin extends AutoPlugin {
 
   override def projectSettings: Seq[Setting[_]] = Def settings (
     siteSubdirName in SiteScaladoc := "api",
-    siteIncludeSxr("sxr"),
+    // siteIncludeSxr("sxr"),
     ghPagesSettings,
     unidocProjectFilter in (ScalaUnidoc, unidoc) := {
       inProjects(projectRefs(baseDirectory.value): _*)
