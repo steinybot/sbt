@@ -87,14 +87,13 @@ val mimaSettings = Def settings (
 )
 
 lazy val sbtRoot: Project = (project in file("."))
-  .enablePlugins(ScriptedPlugin, ScalaUnidocPlugin) // , SiteScaladocPlugin, GhpagesPlugin)
+  .enablePlugins(ScriptedPlugin, ScalaUnidocPlugin, DocsPlugin)
   .configs(Sxr.SxrConf)
   .aggregate(nonRoots: _*)
   .settings(
     buildLevelSettings,
     minimalSettings,
     Util.baseScalacOptions,
-    Docs.settings,
     Sxr.settings,
     scalacOptions += "-Ymacro-expand:none", // for both sxr and doc
     sources in sxr := {

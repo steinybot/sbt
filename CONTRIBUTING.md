@@ -231,11 +231,18 @@ command. To run a single test, such as the test in
 
     sbt "scripted project/global-plugin"
 
-Other notes for maintainers
----------------------------
+### Notes for contributors
+
+Please note that these tests run PAINFULLY slow if the version set in
+`build.sbt` is set to SNAPSHOT, as every time the scripted test boots
+up a test instance of sbt, remote mirrors are scanned for possible
+updates. It is recommended that you set the version suffix to
+`-devel`, as in `1.0.0-devel`.
+
+Note for maintainers
+====================
 
 ### Publishing VS Code Extensions
-
 
 https://code.visualstudio.com/docs/extensions/publish-extension
 
@@ -248,3 +255,14 @@ cd vscode-sbt-scala/client
 $ vsce package
 $ vsce publish
 ```
+
+### Building API docs
+
+1. Rebase wip/unidoc branch https://github.com/eed3si9n/sbt/tree/wip/unidoc on top of the target sbt version.
+2. Set the version to the target version.
+3. Check out the right versions for all modules locally, and run ./sbt-allsources.sh.
+4. ghpagesPushSite
+
+### Building Documentation
+
+The scala-sbt.org site documentation is a separate project [website](https://github.com/sbt/website). Follow [the steps in the README](https://github.com/sbt/website#scala-sbtorg) to generate the documentation.
