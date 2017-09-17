@@ -24,7 +24,8 @@ object DocsPlugin extends AutoPlugin {
     ghPagesSettings,
     unidocProjectFilter in (ScalaUnidoc, unidoc) := {
       inProjects(projectRefs(baseDirectory.value): _*)
-    }
+    },
+    doc in Compile := { (unidoc in Compile).value.head }
   )
 
   /**
