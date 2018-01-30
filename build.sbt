@@ -323,7 +323,7 @@ lazy val protocolProj = (project in file("protocol"))
     scalacOptions -= "-Ywarn-unused",
     scalacOptions += "-Xlint:-unused",
     name := "Protocol",
-    libraryDependencies ++= Seq(sjsonNewScalaJson.value),
+    libraryDependencies ++= Seq(sjsonNewScalaJson.value, ipcSocket),
     managedSourceDirectories in Compile +=
       baseDirectory.value / "src" / "main" / "contraband-scala",
     sourceManaged in (Compile, generateContrabands) := baseDirectory.value / "src" / "main" / "contraband-scala",
