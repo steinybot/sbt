@@ -35,11 +35,14 @@ object KeyIndex {
     } yield {
       val data = ids map { id =>
         val configs = configurations.getOrElse(id, Seq())
-        Option(id) -> new ConfigIndex(Map.empty, configs.map(c => (c.name, c.id)).toMap)
+        def nameWithData(configuration: Configuration): (String, ConfigData) = {
+          (configuration.name, ConfigData(Some(configuration.id), emptyAKeyIndex))
+        }
+        Option(id) -> new ConfigIndex(configs.map(nameWithData).toMap, emptyAKeyIndex)
       }
       Option(uri) -> new ProjectIndex(data.toMap)
     }
-    new KeyIndex0(new BuildIndex(data.toMap))
+    new KeyIndex0(new BuildIndex(data))
   }
 
   def combine(indices: Seq[KeyIndex]): KeyIndex = new KeyIndex {
@@ -68,7 +71,7 @@ object KeyIndex {
   private[sbt] def getOr[A, B](m: Map[A, B], key: A, or: B): B = m.getOrElse(key, or)
   private[sbt] def keySet[A, B](m: Map[Option[A], B]): Set[A] = m.keys.flatten.toSet
   private[sbt] val emptyAKeyIndex = new AKeyIndex(Relation.empty)
-  private[sbt] val emptyConfigIndex = new ConfigIndex(Map.empty, Map.empty)
+  private[sbt] val emptyConfigIndex = new ConfigIndex(Map.empty, emptyAKeyIndex)
   private[sbt] val emptyProjectIndex = new ProjectIndex(Map.empty)
   private[sbt] val emptyBuildIndex = new BuildIndex(Map.empty)
 }
@@ -109,31 +112,56 @@ private[sbt] final class AKeyIndex(val data: Relation[Option[AttributeKey[_]], S
   def keys(task: Option[AttributeKey[_]]): Set[String] = data.forward(task)
   def allKeys: Set[String] = data._2s.toSet
   def tasks: Set[AttributeKey[_]] = data._1s.flatten.toSet
-  def tasks(key: String): Set[AttributeKey[_]] = data.reverse(key).flatten.toSet
+  def tasks(key: String): Set[AttributeKey[_]] = data.reverse(key).flatten
 }
 
+private[sbt] case class IdentifiableConfig(name: String, ident: Option[String])
+
+private[sbt] case class ConfigData(ident: Option[String], keys: AKeyIndex)
+
 /*
- * data contains the mapping between a configuration and keys.
- * identData contains the mapping between a configuration and its identifier.
+ * data contains the mapping between a configuration name and its ident and keys.
+ * noConfigKeys contains the keys without a configuration.
  */
-private[sbt] final class ConfigIndex(val data: Map[Option[String], AKeyIndex],
-                                     val identData: Map[String, String]) {
-  def add(config: Option[String],
+private[sbt] final class ConfigIndex(val data: Map[String, ConfigData],
+                                     val noConfigKeys: AKeyIndex) {
+  def add(config: Option[IdentifiableConfig],
           task: Option[AttributeKey[_]],
           key: AttributeKey[_]): ConfigIndex = {
-    new ConfigIndex(data updated (config, keyIndex(config).add(task, key)), this.identData)
+    config match {
+      case Some(c) => addKeyWithConfig(c, task, key)
+      case None    => addKeyWithoutConfig(task, key)
+    }
   }
 
-  def keyIndex(conf: Option[String]): AKeyIndex = getOr(data, conf, emptyAKeyIndex)
-  def configs: Set[String] = keySet(data)
+  def addKeyWithConfig(config: IdentifiableConfig,
+                       task: Option[AttributeKey[_]],
+                       key: AttributeKey[_]): ConfigIndex = {
+    val oldConfigData = data.getOrElse(config.name, ConfigData(None, emptyAKeyIndex))
+    val newConfigData = ConfigData(
+      ident = oldConfigData.ident.orElse(config.ident),
+      keys = oldConfigData.keys.add(task, key)
+    )
+    new ConfigIndex(data.updated(config.name, newConfigData), noConfigKeys)
+  }
 
-  private[sbt] val configIdentsInverse: Map[String, String] =
-    identData map { _.swap }
+  def addKeyWithoutConfig(task: Option[AttributeKey[_]], key: AttributeKey[_]): ConfigIndex = {
+    new ConfigIndex(data, noConfigKeys.add(task, key))
+  }
 
-  private[sbt] lazy val idents: Set[String] =
-    configs map { config =>
-      identData.getOrElse(config, Scope.guessConfigIdent(config))
+  def keyIndex(conf: Option[String]): AKeyIndex = conf match {
+    case Some(c) => data.get(c).map(_.keys).getOrElse(emptyAKeyIndex)
+    case None    => noConfigKeys
+  }
+
+  def configs: Set[String] = data.keySet
+
+  private[sbt] val configIdentsInverse: Map[String, String] = {
+    data.map {
+      case (name, ConfigData(Some(ident), _)) => ident -> name
+      case (name, ConfigData(None, _))        => Scope.guessConfigIdent(name) -> name
     }
+  }
 
   // guess Configuration name from an identifier.
   // There's a guessing involved because we could have scoped key that Project is not aware of.
@@ -142,7 +170,7 @@ private[sbt] final class ConfigIndex(val data: Map[Option[String], AKeyIndex],
 }
 private[sbt] final class ProjectIndex(val data: Map[Option[String], ConfigIndex]) {
   def add(id: Option[String],
-          config: Option[String],
+          config: Option[IdentifiableConfig],
           task: Option[AttributeKey[_]],
           key: AttributeKey[_]): ProjectIndex =
     new ProjectIndex(data updated (id, confIndex(id).add(config, task, key)))
@@ -152,7 +180,7 @@ private[sbt] final class ProjectIndex(val data: Map[Option[String], ConfigIndex]
 private[sbt] final class BuildIndex(val data: Map[Option[URI], ProjectIndex]) {
   def add(build: Option[URI],
           project: Option[String],
-          config: Option[String],
+          config: Option[IdentifiableConfig],
           task: Option[AttributeKey[_]],
           key: AttributeKey[_]): BuildIndex =
     new BuildIndex(data updated (build, projectIndex(build).add(project, config, task, key)))
@@ -169,7 +197,7 @@ private[sbt] final class KeyIndex0(val data: BuildIndex) extends ExtendableKeyIn
   def configs(project: Option[ResolvedReference]): Set[String] = confIndex(project).configs
 
   private[sbt] def configIdents(project: Option[ResolvedReference]): Set[String] =
-    confIndex(project).idents
+    confIndex(project).configs
 
   private[sbt] def fromConfigIdent(proj: Option[ResolvedReference])(configIdent: String): String =
     confIndex(proj).fromConfigIdent(configIdent)
@@ -221,6 +249,8 @@ private[sbt] final class KeyIndex0(val data: BuildIndex) extends ExtendableKeyIn
                          id: Option[String],
                          config: ScopeAxis[ConfigKey],
                          task: ScopeAxis[AttributeKey[_]],
-                         key: AttributeKey[_]): ExtendableKeyIndex =
-    new KeyIndex0(data.add(uri, id, config.toOption.map(_.name), task.toOption, key))
+                         key: AttributeKey[_]): ExtendableKeyIndex = {
+    val keyConfig = config.toOption.map(c => IdentifiableConfig(c.name, None))
+    new KeyIndex0(data.add(uri, id, keyConfig, task.toOption, key))
+  }
 }
