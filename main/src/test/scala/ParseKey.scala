@@ -124,6 +124,7 @@ object ParseKey extends Properties("Key parser test") {
       configKey <- resolvedKey.scope.config.toOption
     } yield {
       val configID = Scope.display(configKey)
+      // This only works for known configurations or those that were guessed correctly.
       val name = structure.keyIndex.fromConfigIdent(maybeResolvedProj)(configID)
       name == configKey.name
     }

@@ -144,7 +144,7 @@ final case class Extracted(structure: BuildStructure,
   ): State = {
     val appendSettings =
       Load.transformSettings(Load.projectScope(currentRef), currentRef.build, rootProject, settings)
-    val newStructure = Load.reapply(sessionSettings ++ appendSettings, structure)
+    val newStructure = Load.reapply(sessionSettings ++ appendSettings, structure, state.log)
     Project.setProject(session, newStructure, state)
   }
 }
