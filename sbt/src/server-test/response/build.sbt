@@ -13,6 +13,12 @@ Global / serverHandlers += ServerHandler({ callback =>
       case r: JsonRpcRequestMessage if r.method == "foo/export" =>
         appendExec(Exec("fooExport", Some(r.id), Some(CommandSource(callback.name))))
         ()
+      case r: JsonRpcRequestMessage if r.method == "foo/fail" =>
+        appendExec(Exec("fooFail", Some(r.id), Some(CommandSource(callback.name))))
+        ()
+      case r: JsonRpcRequestMessage if r.method == "foo/customfail" =>
+        appendExec(Exec("fooCustomFail", Some(r.id), Some(CommandSource(callback.name))))
+        ()
       case r: JsonRpcRequestMessage if r.method == "foo/rootClasspath" =>
         appendExec(Exec("fooClasspath", Some(r.id), Some(CommandSource(callback.name))))
         ()
@@ -30,6 +36,13 @@ lazy val root = (project in file("."))
       val (s1, cp) = extracted.runTask(Compile / fullClasspath, s0)
       s0.respondEvent(cp.map(_.data))
       s1
+    },
+    commands += Command.command("fooFail") { s0: State =>
+      sys.error("fail message")
+    },
+    commands += Command.command("fooCustomFail") { s0: State =>
+      import sbt.internal.protocol.JsonRpcResponseError
+      throw JsonRpcResponseError(500, "some error")
     },
     fooClasspath := {
       val s = state.value

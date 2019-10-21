@@ -34,4 +34,24 @@ object ResponseTest extends AbstractServerTest {
       (s contains "scala-library-2.12.10.jar")
     })
   }
+
+  test("a command failure") { _ =>
+    svr.sendJsonRpc(
+      """{ "jsonrpc": "2.0", "id": "12", "method": "foo/fail", "params": {} }"""
+    )
+    assert(svr.waitForString(10.seconds) { s =>
+      println(s)
+      (s contains """"error":{"code":-33000,"message":"fail message"""")
+    })
+  }
+
+  test("a command failure with custom code") { _ =>
+    svr.sendJsonRpc(
+      """{ "jsonrpc": "2.0", "id": "13", "method": "foo/customfail", "params": {} }"""
+    )
+    assert(svr.waitForString(10.seconds) { s =>
+      println(s)
+      (s contains """"error":{"code":500,"message":"some error"""")
+    })
+  }
 }

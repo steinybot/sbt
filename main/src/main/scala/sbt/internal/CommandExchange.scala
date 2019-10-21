@@ -15,6 +15,7 @@ import java.util.concurrent.atomic._
 
 import sbt.BasicKeys._
 import sbt.nio.Watch.NullLogger
+import sbt.internal.protocol.JsonRpcResponseError
 import sbt.internal.langserver.{ LogMessageParams, MessageType }
 import sbt.internal.server._
 import sbt.internal.util.codec.JValueFormats
@@ -190,6 +191,48 @@ private[sbt] final class CommandExchange {
     // interrupt and kill the thread
     server.foreach(_.shutdown())
     server = None
+  }
+
+  // This is an interface to directly respond events.
+  private[sbt] def respondError(
+      code: Long,
+      message: String,
+      execId: Option[String],
+      source: Option[CommandSource]
+  ): Unit = {
+    val toDel: ListBuffer[CommandChannel] = ListBuffer.empty
+    channels.foreach {
+      case _: ConsoleChannel =>
+      case c: NetworkChannel =>
+        try {
+          // broadcast to all network channels
+          c.respondError(code, message, execId, source)
+        } catch {
+          case _: IOException =>
+            toDel += c
+        }
+    }
+    removeChannels(toDel.toList)
+  }
+
+  private[sbt] def respondError(
+      err: JsonRpcResponseError,
+      execId: Option[String],
+      source: Option[CommandSource]
+  ): Unit = {
+    val toDel: ListBuffer[CommandChannel] = ListBuffer.empty
+    channels.foreach {
+      case _: ConsoleChannel =>
+      case c: NetworkChannel =>
+        try {
+          // broadcast to all network channels
+          c.respondError(err, execId, source)
+        } catch {
+          case _: IOException =>
+            toDel += c
+        }
+    }
+    removeChannels(toDel.toList)
   }
 
   // This is an interface to directly respond events.
