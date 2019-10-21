@@ -817,6 +817,8 @@ lazy val sbtProj = (project in file("sbt"))
     javaOptions ++= Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"),
     mimaSettings,
     mimaBinaryIssueFilters ++= sbtIgnoredProblems,
+  )
+  .settings( // these settings needed for RunFromSourceMain
     BuildInfoPlugin.buildInfoDefaultSettings,
     addBuildInfoToConfig(Test),
     BuildInfoPlugin.buildInfoDefaultSettings,
@@ -833,13 +835,25 @@ lazy val sbtProj = (project in file("sbt"))
       classDirectory in Compile,
       classDirectory in Test,
     ),
+    Test / run / connectInput := true,
+    Test / run / outputStrategy := Some(StdoutOutput),
+    Test / run / fork := true,
+  )
+  .configure(addSbtIO, addSbtCompilerBridge)
+
+lazy val serverTestProj = (project in file("server-test"))
+  .dependsOn(sbtProj % "test->test", scriptedSbtReduxProj % "test->test")
+  .settings(
+    testedBaseSettings,
+    crossScalaVersions := Seq(baseScalaVersion),
+    publish / skip := true,
+
     // make server tests serial
     Test / parallelExecution := false,
     Test / run / connectInput := true,
     Test / run / outputStrategy := Some(StdoutOutput),
     Test / run / fork := true,
   )
-  .configure(addSbtIO, addSbtCompilerBridge)
 
 /*
 lazy val sbtBig = (project in file(".big"))
@@ -1052,7 +1066,8 @@ lazy val docProjects: ScopeFilter = ScopeFilter(
     sbtProj,
     scriptedSbtReduxProj,
     scriptedSbtOldProj,
-    scriptedPluginProj
+    scriptedPluginProj,
+    serverTestProj,
   ),
   inConfigurations(Compile)
 )
@@ -1061,14 +1076,6 @@ lazy val safeProjects: ScopeFilter = ScopeFilter(
   inAnyProject -- inProjects(sbtRoot, sbtProj),
   inConfigurations(Test)
 )
-lazy val otherUnitTests = taskKey[Unit]("Unit test other projects")
-lazy val otherProjects: ScopeFilter = ScopeFilter(
-  inProjects(
-    sbtProj
-  ),
-  inConfigurations(Test)
-)
-
 def customCommands: Seq[Setting[_]] = Seq(
   commands += Command.command("setupBuildScala212") { state =>
     s"""set scalaVersion in ThisBuild := "$scala212" """ ::
@@ -1076,9 +1083,6 @@ def customCommands: Seq[Setting[_]] = Seq(
   },
   safeUnitTests := {
     test.all(safeProjects).value
-  },
-  otherUnitTests := {
-    test.all(otherProjects).value
   },
   commands += Command.command("whitesourceOnPush") { state =>
     sys.env.get("TRAVIS_EVENT_TYPE") match {

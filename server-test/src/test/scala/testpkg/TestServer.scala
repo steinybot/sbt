@@ -39,7 +39,8 @@ trait AbstractServerTest extends TestSuite[Unit] {
 }
 
 object TestServer {
-  private val serverTestBase: File = new File(".").getAbsoluteFile / "sbt" / "src" / "server-test"
+  private val serverTestBase
+      : File = new File(".").getAbsoluteFile / "server-test" / "src" / "server-test"
 
   def get(testBuild: String, temp: File): TestServer = {
     println(s"Starting test server $testBuild")
