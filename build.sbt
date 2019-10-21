@@ -833,6 +833,8 @@ lazy val sbtProj = (project in file("sbt"))
       classDirectory in Compile,
       classDirectory in Test,
     ),
+    // make server tests serial
+    Test / parallelExecution := false,
     Test / run / connectInput := true,
     Test / run / outputStrategy := Some(StdoutOutput),
     Test / run / fork := true,
