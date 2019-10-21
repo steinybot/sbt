@@ -52,6 +52,17 @@ private[sbt] final class CommandExchange {
   private lazy val jsonFormat = new sjsonnew.BasicJsonProtocol with JValueFormats {}
 
   def channels: List[CommandChannel] = channelBuffer.toList
+  private[this] def removeChannels(toDel: List[CommandChannel]): Unit = {
+    toDel match {
+      case Nil => // do nothing
+      case xs =>
+        channelBufferLock.synchronized {
+          channelBuffer --= xs
+          ()
+        }
+    }
+  }
+
   def subscribe(c: CommandChannel): Unit = channelBufferLock.synchronized {
     channelBuffer.append(c)
     c.register(commandChannelQueue)
@@ -181,6 +192,27 @@ private[sbt] final class CommandExchange {
     server = None
   }
 
+  // This is an interface to directly respond events.
+  private[sbt] def respondEvent[A: JsonFormat](
+      event: A,
+      execId: Option[String],
+      source: Option[CommandSource]
+  ): Unit = {
+    val toDel: ListBuffer[CommandChannel] = ListBuffer.empty
+    channels.foreach {
+      case _: ConsoleChannel =>
+      case c: NetworkChannel =>
+        try {
+          // broadcast to all network channels
+          c.respondEvent(event, execId, source)
+        } catch {
+          case _: IOException =>
+            toDel += c
+        }
+    }
+    removeChannels(toDel.toList)
+  }
+
   // This is an interface to directly notify events.
   private[sbt] def notifyEvent[A: JsonFormat](method: String, params: A): Unit = {
     val toDel: ListBuffer[CommandChannel] = ListBuffer.empty
@@ -195,14 +227,7 @@ private[sbt] final class CommandExchange {
             toDel += c
         }
     }
-    toDel.toList match {
-      case Nil => // do nothing
-      case xs =>
-        channelBufferLock.synchronized {
-          channelBuffer --= xs
-          ()
-        }
-    }
+    removeChannels(toDel.toList)
   }
 
   private def tryTo(x: => Unit, c: CommandChannel, toDel: ListBuffer[CommandChannel]): Unit =
@@ -248,14 +273,7 @@ private[sbt] final class CommandExchange {
             tryTo(c.publishEvent(event), c, toDel)
         }
     }
-    toDel.toList match {
-      case Nil => // do nothing
-      case xs =>
-        channelBufferLock.synchronized {
-          channelBuffer --= xs
-          ()
-        }
-    }
+    removeChannels(toDel.toList)
   }
 
   private[sbt] def toLogMessageParams(event: StringEvent): LogMessageParams = {
@@ -290,14 +308,7 @@ private[sbt] final class CommandExchange {
             toDel += c
         }
     }
-    toDel.toList match {
-      case Nil => // do nothing
-      case xs =>
-        channelBufferLock.synchronized {
-          channelBuffer --= xs
-          ()
-        }
-    }
+    removeChannels(toDel.toList)
   }
 
   // fanout publishEvent
@@ -328,13 +339,6 @@ private[sbt] final class CommandExchange {
         }
     }
 
-    toDel.toList match {
-      case Nil => // do nothing
-      case xs =>
-        channelBufferLock.synchronized {
-          channelBuffer --= xs
-          ()
-        }
-    }
+    removeChannels(toDel.toList)
   }
 }

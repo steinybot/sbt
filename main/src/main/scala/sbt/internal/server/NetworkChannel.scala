@@ -241,6 +241,14 @@ final class NetworkChannel(
     }
   }
 
+  private[sbt] def respondEvent[A: JsonFormat](
+      event: A,
+      execId: Option[String],
+      source: Option[CommandSource]
+  ): Unit = {
+    jsonRpcRespond(event, execId)
+  }
+
   private[sbt] def notifyEvent[A: JsonFormat](method: String, params: A): Unit = {
     if (isLanguageServerProtocol) {
       jsonRpcNotify(method, params)
