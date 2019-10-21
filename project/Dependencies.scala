@@ -124,6 +124,7 @@ object Dependencies {
   val scalacheck = "org.scalacheck" %% "scalacheck" % "1.14.0"
   val specs2 = "org.specs2" %% "specs2-junit" % "4.0.1"
   val junit = "junit" % "junit" % "4.11"
+  val scalaVerify = "com.eed3si9n.verify" %% "verify" % "0.2.0"
   val templateResolverApi = "org.scala-sbt" % "template-resolver" % "0.1"
 
   private def scala211Module(name: String, moduleVersion: String) = Def setting (

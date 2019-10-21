@@ -70,6 +70,7 @@ def commonSettings: Seq[Setting[_]] = Def.settings(
   resolvers += Resolver.url("bintray-scala-hedgehog", url("https://dl.bintray.com/hedgehogqa/scala-hedgehog"))(Resolver.ivyStylePatterns),
   addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.4" cross CrossVersion.binary),
   testFrameworks += TestFramework("hedgehog.sbt.Framework"),
+  testFrameworks += TestFramework("verify.runner.Framework"),
   concurrentRestrictions in Global += Util.testExclusiveRestriction,
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-w", "1"),
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "2"),
