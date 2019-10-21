@@ -47,6 +47,8 @@ object StateServerOps {
     def respondError(code: Long, message: String): Unit = {
       exchange.respondError(code, message, s.currentCommand.flatMap(_.execId), s.source)
     }
-    def notifyEvent[A: JsonFormat](method: String, params: A): Unit = ()
+    def notifyEvent[A: JsonFormat](method: String, params: A): Unit = {
+      exchange.notifyEvent(method, params)
+    }
   }
 }

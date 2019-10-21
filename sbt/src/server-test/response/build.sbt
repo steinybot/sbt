@@ -19,6 +19,9 @@ Global / serverHandlers += ServerHandler({ callback =>
       case r: JsonRpcRequestMessage if r.method == "foo/customfail" =>
         appendExec(Exec("fooCustomFail", Some(r.id), Some(CommandSource(callback.name))))
         ()
+      case r: JsonRpcRequestMessage if r.method == "foo/notification" =>
+        appendExec(Exec("fooNotification", Some(r.id), Some(CommandSource(callback.name))))
+        ()
       case r: JsonRpcRequestMessage if r.method == "foo/rootClasspath" =>
         appendExec(Exec("fooClasspath", Some(r.id), Some(CommandSource(callback.name))))
         ()
@@ -43,6 +46,11 @@ lazy val root = (project in file("."))
     commands += Command.command("fooCustomFail") { s0: State =>
       import sbt.internal.protocol.JsonRpcResponseError
       throw JsonRpcResponseError(500, "some error")
+    },
+    commands += Command.command("fooNotification") { s0: State =>
+      import CacheImplicits._
+      s0.notifyEvent("foo/something", "something")
+      s0
     },
     fooClasspath := {
       val s = state.value

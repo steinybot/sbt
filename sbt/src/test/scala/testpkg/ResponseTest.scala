@@ -54,4 +54,14 @@ object ResponseTest extends AbstractServerTest {
       (s contains """"error":{"code":500,"message":"some error"""")
     })
   }
+
+  test("a command with a notification") { _ =>
+    svr.sendJsonRpc(
+      """{ "jsonrpc": "2.0", "id": "14", "method": "foo/notification", "params": {} }"""
+    )
+    assert(svr.waitForString(10.seconds) { s =>
+      println(s)
+      (s contains """{"jsonrpc":"2.0","method":"foo/something","params":"something"}""")
+    })
+  }
 }
