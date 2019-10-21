@@ -10,6 +10,9 @@ Global / serverHandlers += ServerHandler({ callback =>
   import sbt.internal.protocol.JsonRpcRequestMessage
   ServerIntent(
     {
+      case r: JsonRpcRequestMessage if r.method == "foo/export" =>
+        appendExec(Exec("fooExport", Some(r.id), Some(CommandSource(callback.name))))
+        ()
       case r: JsonRpcRequestMessage if r.method == "foo/rootClasspath" =>
         appendExec(Exec("fooClasspath", Some(r.id), Some(CommandSource(callback.name))))
         ()
@@ -22,9 +25,15 @@ lazy val fooClasspath = taskKey[Unit]("")
 lazy val root = (project in file("."))
   .settings(
     name := "response",
+    commands += Command.command("fooExport") { s0: State =>
+      val extracted = s0.extract
+      val (s1, cp) = extracted.runTask(Compile / fullClasspath, s0)
+      s0.respondEvent(cp.map(_.data))
+      s1
+    },
     fooClasspath := {
       val s = state.value
       val cp = (Compile / fullClasspath).value
       s.respondEvent(cp.map(_.data))
-    }
+    },
   )

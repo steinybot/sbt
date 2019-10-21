@@ -30,6 +30,7 @@ private[sbt] trait BuildSyntax {
 private[sbt] object BuildSyntax extends BuildSyntax
 
 trait StateServerOps extends Any {
+  def extract: Extracted
   def respondEvent[A: JsonFormat](event: A): Unit
   def respondError(code: Long, message: String): Unit
   def notifyEvent[A: JsonFormat](method: String, params: A): Unit
@@ -39,6 +40,7 @@ object StateServerOps {
   lazy val exchange = StandardMain.exchange
 
   implicit class StateServerOpsImpl(val s: State) extends AnyVal with StateServerOps {
+    def extract: Extracted = Project.extract(s)
     def respondEvent[A: JsonFormat](event: A): Unit = {
       exchange.respondEvent(event, s.currentCommand.flatMap(_.execId), s.source)
     }

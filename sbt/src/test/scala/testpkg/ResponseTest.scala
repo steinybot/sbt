@@ -13,13 +13,24 @@ import scala.concurrent.duration._
 object ResponseTest extends AbstractServerTest {
   override val testDirectory: String = "response"
 
-  test("response from a task") { _ =>
+  test("response from a command") { _ =>
     svr.sendJsonRpc(
-      """{ "jsonrpc": "2.0", "id": "10", "method": "foo/rootClasspath", "params": {} }"""
+      """{ "jsonrpc": "2.0", "id": "10", "method": "foo/export", "params": {} }"""
     )
     assert(svr.waitForString(10.seconds) { s =>
       println(s)
       (s contains """"id":"10"""") &&
+      (s contains "scala-library-2.12.10.jar")
+    })
+  }
+
+  test("response from a task") { _ =>
+    svr.sendJsonRpc(
+      """{ "jsonrpc": "2.0", "id": "11", "method": "foo/rootClasspath", "params": {} }"""
+    )
+    assert(svr.waitForString(10.seconds) { s =>
+      println(s)
+      (s contains """"id":"11"""") &&
       (s contains "scala-library-2.12.10.jar")
     })
   }
