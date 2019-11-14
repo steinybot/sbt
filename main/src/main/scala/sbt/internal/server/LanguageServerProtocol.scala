@@ -18,6 +18,7 @@ import sbt.internal.langserver.{ CancelRequestParams => CRP }
 import sbt.internal.protocol._
 import sbt.internal.protocol.codec._
 import sbt.internal.langserver._
+import sbt.internal.buildserver._
 import sbt.internal.util.ObjectEvent
 import sbt.util.Logger
 
@@ -91,6 +92,28 @@ private[sbt] object LanguageServerProtocol {
               import sbt.protocol.codec.JsonProtocol._
               val param = Converter.fromJson[CP](json(r)).get
               onCompletionRequest(Option(r.id), param)
+            case r: JsonRpcRequestMessage if r.method == "build/initialize" =>
+              import sbt.internal.buildserver.codec.JsonProtocol._
+              val param = Converter.fromJson[InitializeBuildParams](json(r)).get
+              // TODO: Implement this properly.
+              jsonRpcRespond(
+                InitializeBuildResult(
+                  param.displayName,
+                  "1.0",
+                  "5.0",
+                  BuildServerCapabilities(
+                    CompileProvider(Vector.empty),
+                    TestProvider(Vector.empty),
+                    RunProvider(Vector.empty),
+                    true,
+                    true,
+                    true,
+                    true
+                  ),
+                  None
+                ),
+                Option(r.id)
+              )
           }
         }, {
           case n: JsonRpcNotificationMessage if n.method == "textDocument/didSave" =>
