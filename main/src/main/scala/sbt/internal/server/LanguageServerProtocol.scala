@@ -96,6 +96,7 @@ private[sbt] object LanguageServerProtocol {
             case r: JsonRpcRequestMessage if r.method == "build/initialize" =>
               import sbt.internal.buildserver.codec.JsonProtocol._
               val param = Converter.fromJson[InitializeBuildParams](json(r)).get
+              // TODO: What languages to support?
               val capabilities = param.capabilities.languageIds.filter(_ == "scala")
               // TODO: Do we need to distinguish between LSP initialization and BSP?
               setInitialized(true);
@@ -117,12 +118,16 @@ private[sbt] object LanguageServerProtocol {
                 ),
                 Option(r.id)
               )
-            case r: JsonRpcRequestMessage if r.method.startsWith("build/") && !initialized =>
+            // TODO: Only do this for BSP requests.
+            case r: JsonRpcRequestMessage if !initialized =>
               jsonRpcRespondError(
                 Option(r.id),
                 -32002,
                 "The build has not been initialized. The client must sent a build/initialize request as the first request."
               )
+            case r: JsonRpcRequestMessage if r.method == "workspace/buildTargets" =>
+              appendExec(Exec("bspWorkspaceBuildTargets", None, Some(CommandSource(name))))
+              ()
           }
         }, {
           case n: JsonRpcNotificationMessage if n.method == "textDocument/didSave" =>
