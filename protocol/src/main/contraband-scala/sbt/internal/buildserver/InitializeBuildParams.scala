@@ -6,12 +6,12 @@
 package sbt.internal.buildserver
 /**
  * The first request from the client to the server.
- * @param displayName Name of the client.
- * @param version The version of the client.
- * @param bspVersion The BSP version that the client speaks.
- * @param rootUri The rootUri of the workspace.
- * @param capabilities The capabilities of the client.
- * @param data Additional metadata about the client.
+ * @param displayName Name of the client
+ * @param version The version of the client
+ * @param bspVersion The BSP version that the client speaks
+ * @param rootUri The rootUri of the workspace
+ * @param capabilities The capabilities of the client
+ * @param data Additional metadata about the client
  */
 final class InitializeBuildParams private (
   val displayName: String,

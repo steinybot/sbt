@@ -8,6 +8,7 @@ package sbt.internal.buildserver
  * Capabilities of the client.
  * @param languageIds The languages that this client supports.
                       The ID strings for each language is defined in the LSP.
+                      https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
                       The server must never respond with build targets for other
                       languages than those that appear in this list.
  */

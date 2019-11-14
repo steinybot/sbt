@@ -5,17 +5,17 @@
 // DO NOT EDIT MANUALLY
 package sbt.internal.buildserver
 /**
- * @param compileProvider The languages the server supports compilation via method buildTarget/compile.
- * @param testProvider The languages the server supports test execution via method buildTarget/test.
- * @param runProvider The languages the server supports run via method buildTarget/run.
+ * @param compileProvider The languages the server supports compilation via method buildTarget/compile
+ * @param testProvider The languages the server supports test execution via method buildTarget/test
+ * @param runProvider The languages the server supports run via method buildTarget/run
  * @param inverseSourcesProvider The server can provide a list of targets that contain a
-                                 single text document via the method buildTarget/inverseSources.
+                                 single text document via the method buildTarget/inverseSources
  * @param dependencySourcesProvider The server provides sources for library dependencies
-                                    via method buildTarget/dependencySources.
+                                    via method buildTarget/dependencySources
  * @param resourcesProvider The server provides all the resource dependencies
-                            via method buildTarget/resources.
+                            via method buildTarget/resources
  * @param buildTargetChangedProvider The server sends notifications to the client on build
-                                     target change events via buildTarget/didChange.
+                                     target change events via buildTarget/didChange
  */
 final class BuildServerCapabilities private (
   val compileProvider: Option[sbt.internal.buildserver.CompileProvider],

@@ -4,7 +4,10 @@
 
 // DO NOT EDIT MANUALLY
 package sbt.internal.buildserver
-/** The languages the server supports test execution via method buildTarget/test. */
+/**
+ * The languages the server supports test execution via method buildTarget/test.
+ * https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
+ */
 final class TestProvider private (
   val languageIds: Vector[String]) extends Serializable {
   

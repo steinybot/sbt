@@ -4,7 +4,10 @@
 
 // DO NOT EDIT MANUALLY
 package sbt.internal.buildserver
-/** The languages the server supports run via method buildTarget/run. */
+/**
+ * The languages the server supports run via method buildTarget/run.
+ * https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
+ */
 final class RunProvider private (
   val languageIds: Vector[String]) extends Serializable {
   

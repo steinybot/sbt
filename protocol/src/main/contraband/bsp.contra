@@ -9,22 +9,22 @@ package sbt.internal.buildserver
 
 ## The first request from the client to the server.
 type InitializeBuildParams {
-  ## Name of the client.
+  ## Name of the client
   displayName: String!
 
-  ## The version of the client.
+  ## The version of the client
   version: String!
 
-  ## The BSP version that the client speaks.
+  ## The BSP version that the client speaks
   bspVersion: String!
 
-  ## The rootUri of the workspace.
+  ## The rootUri of the workspace
   rootUri: String!
 
-  ## The capabilities of the client.
+  ## The capabilities of the client
   capabilities: sbt.internal.buildserver.BuildClientCapabilities!
 
-  ## Additional metadata about the client.
+  ## Additional metadata about the client
   data: sjsonnew.shaded.scalajson.ast.unsafe.JValue
 }
 
@@ -32,6 +32,7 @@ type InitializeBuildParams {
 type BuildClientCapabilities {
    ## The languages that this client supports.
    ## The ID strings for each language is defined in the LSP.
+   ## https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
    ## The server must never respond with build targets for other
    ## languages than those that appear in this list.
   languageIds: [String]!
@@ -39,61 +40,64 @@ type BuildClientCapabilities {
 
 ## Response to InitializeBuildParams.
 type InitializeBuildResult {
-  ## Name of the server.
+  ## Name of the server
   displayName: String!
 
-  ## The version of the server.
+  ## The version of the server
   version: String!
 
-  ## The BSP version that the server speaks.
+  ## The BSP version that the server speaks
   bspVersion: String!
 
-  ## The capabilities of the build server.
+  ## The capabilities of the build server
   capabilities: sbt.internal.buildserver.BuildServerCapabilities!
 
-  ## Additional metadata about the server.
+  ## Additional metadata about the server
   data: sjsonnew.shaded.scalajson.ast.unsafe.JValue
 }
 
 # Capabilities of the build server.
 type BuildServerCapabilities {
-  ## The languages the server supports compilation via method buildTarget/compile.
+  ## The languages the server supports compilation via method buildTarget/compile
   compileProvider: sbt.internal.buildserver.CompileProvider
 
-  ## The languages the server supports test execution via method buildTarget/test.
+  ## The languages the server supports test execution via method buildTarget/test
   testProvider: sbt.internal.buildserver.TestProvider
 
-  ## The languages the server supports run via method buildTarget/run.
+  ## The languages the server supports run via method buildTarget/run
   runProvider: sbt.internal.buildserver.RunProvider
 
   ## The server can provide a list of targets that contain a
-  ## single text document via the method buildTarget/inverseSources.
+  ## single text document via the method buildTarget/inverseSources
   inverseSourcesProvider: Boolean
 
   ## The server provides sources for library dependencies
-  ## via method buildTarget/dependencySources.
+  ## via method buildTarget/dependencySources
   dependencySourcesProvider: Boolean
 
   ## The server provides all the resource dependencies
-  ## via method buildTarget/resources.
+  ## via method buildTarget/resources
   resourcesProvider: Boolean
 
   ## The server sends notifications to the client on build
-  ## target change events via buildTarget/didChange.
+  ## target change events via buildTarget/didChange
   buildTargetChangedProvider: Boolean
 }
 
 ## The languages the server supports compilation via method buildTarget/compile.
+## https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
 type CompileProvider {
   languageIds: [String]
 }
 
 ## The languages the server supports run via method buildTarget/run.
+## https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
 type RunProvider {
   languageIds: [String]
 }
 
 ## The languages the server supports test execution via method buildTarget/test.
+## https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
 type TestProvider {
   languageIds: [String]
 }

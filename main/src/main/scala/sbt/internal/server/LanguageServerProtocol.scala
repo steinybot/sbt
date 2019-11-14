@@ -27,6 +27,7 @@ import scala.concurrent.ExecutionContext
 private[sbt] final case class LangServerError(code: Long, message: String)
     extends Throwable(message)
 
+// TODO: We might want to rename this or split LSP from BSP.
 private[sbt] object LanguageServerProtocol {
   lazy val internalJsonProtocol = new InitializeOptionFormats with sjsonnew.BasicJsonProtocol {}
 
@@ -95,16 +96,16 @@ private[sbt] object LanguageServerProtocol {
             case r: JsonRpcRequestMessage if r.method == "build/initialize" =>
               import sbt.internal.buildserver.codec.JsonProtocol._
               val param = Converter.fromJson[InitializeBuildParams](json(r)).get
-              // TODO: Implement this properly.
+              val capabilities = param.capabilities.languageIds.filter(_ == "scala")
               jsonRpcRespond(
                 InitializeBuildResult(
-                  param.displayName,
+                  "sbt",
                   "1.0",
-                  "5.0",
+                  "2.0",
                   BuildServerCapabilities(
-                    CompileProvider(Vector.empty),
-                    TestProvider(Vector.empty),
-                    RunProvider(Vector.empty),
+                    CompileProvider(capabilities),
+                    TestProvider(capabilities),
+                    RunProvider(capabilities),
                     true,
                     true,
                     true,

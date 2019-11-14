@@ -6,11 +6,11 @@
 package sbt.internal.buildserver
 /**
  * Response to InitializeBuildParams.
- * @param displayName Name of the server.
- * @param version The version of the server.
- * @param bspVersion The BSP version that the server speaks.
- * @param capabilities The capabilities of the build server.
- * @param data Additional metadata about the server.
+ * @param displayName Name of the server
+ * @param version The version of the server
+ * @param bspVersion The BSP version that the server speaks
+ * @param capabilities The capabilities of the build server
+ * @param data Additional metadata about the server
  */
 final class InitializeBuildResult private (
   val displayName: String,

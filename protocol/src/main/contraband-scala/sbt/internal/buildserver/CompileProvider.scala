@@ -4,7 +4,10 @@
 
 // DO NOT EDIT MANUALLY
 package sbt.internal.buildserver
-/** The languages the server supports compilation via method buildTarget/compile. */
+/**
+ * The languages the server supports compilation via method buildTarget/compile.
+ * https://microsoft.github.io/language-server-protocol/specifications/specification-3-14/#textdocumentitem
+ */
 final class CompileProvider private (
   val languageIds: Vector[String]) extends Serializable {
   
