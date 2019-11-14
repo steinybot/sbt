@@ -44,7 +44,7 @@ final class NetworkChannel(
   private val delimiter: Byte = '\n'.toByte
   private val RetByte = '\r'.toByte
   private val out = connection.getOutputStream
-  private var initialized = false
+  private var _initialized = false
   private val Curly = '{'.toByte
   private val ContentLength = """^Content\-Length\:\s*(\d+)""".r
   private val ContentType = """^Content\-Type\:\s*(.+)""".r
@@ -59,7 +59,9 @@ final class NetworkChannel(
 
   protected def authenticate(token: String): Boolean = instance.authenticate(token)
 
-  protected def setInitialized(value: Boolean): Unit = initialized = value
+  protected def setInitialized(value: Boolean): Unit = _initialized = value
+
+  protected def initialized: Boolean = _initialized
 
   protected def authOptions: Set[ServerAuthentication] = auth
 
@@ -357,14 +359,14 @@ final class NetworkChannel(
         case Some(x) =>
           authenticate(x) match {
             case true =>
-              initialized = true
+              _initialized = true
               publishEventMessage(ChannelAcceptedEvent(name))
             case _ => sys.error("invalid token")
           }
         case None => sys.error("init command but without token.")
       }
     } else {
-      initialized = true
+      _initialized = true
     }
   }
 

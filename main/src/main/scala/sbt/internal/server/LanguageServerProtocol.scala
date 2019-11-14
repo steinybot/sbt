@@ -97,6 +97,8 @@ private[sbt] object LanguageServerProtocol {
               import sbt.internal.buildserver.codec.JsonProtocol._
               val param = Converter.fromJson[InitializeBuildParams](json(r)).get
               val capabilities = param.capabilities.languageIds.filter(_ == "scala")
+              // TODO: Do we need to distinguish between LSP initialization and BSP?
+              setInitialized(true);
               jsonRpcRespond(
                 InitializeBuildResult(
                   "sbt",
@@ -114,6 +116,12 @@ private[sbt] object LanguageServerProtocol {
                   None
                 ),
                 Option(r.id)
+              )
+            case r: JsonRpcRequestMessage if r.method.startsWith("build/") && !initialized =>
+              jsonRpcRespondError(
+                Option(r.id),
+                -32002,
+                "The build has not been initialized. The client must sent a build/initialize request as the first request."
               )
           }
         }, {
@@ -133,6 +141,7 @@ private[sbt] trait LanguageServerProtocol extends CommandChannel { self =>
   protected def authenticate(token: String): Boolean
   protected def authOptions: Set[ServerAuthentication]
   protected def setInitialized(value: Boolean): Unit
+  protected def initialized: Boolean
   protected def log: Logger
   protected def onSettingQuery(execId: Option[String], req: Q): Unit
   protected def onCompletionRequest(execId: Option[String], cp: CP): Unit
@@ -154,6 +163,7 @@ private[sbt] trait LanguageServerProtocol extends CommandChannel { self =>
     private[sbt] def authOptions: Set[ServerAuthentication] = self.authOptions
     private[sbt] def authenticate(token: String): Boolean = self.authenticate(token)
     private[sbt] def setInitialized(value: Boolean): Unit = self.setInitialized(value)
+    private[sbt] def initialized: Boolean = self.initialized
     private[sbt] def onSettingQuery(execId: Option[String], req: Q): Unit =
       self.onSettingQuery(execId, req)
     private[sbt] def onCompletionRequest(execId: Option[String], cp: CP): Unit =
