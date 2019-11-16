@@ -18,7 +18,6 @@ import sbt.internal.langserver.{ CancelRequestParams => CRP }
 import sbt.internal.protocol._
 import sbt.internal.protocol.codec._
 import sbt.internal.langserver._
-import sbt.internal.buildserver.{ ErrorCodes => _, _ }
 import sbt.internal.util.ObjectEvent
 import sbt.util.Logger
 
@@ -27,7 +26,6 @@ import scala.concurrent.ExecutionContext
 private[sbt] final case class LangServerError(code: Long, message: String)
     extends Throwable(message)
 
-// TODO: We might want to rename this or split LSP from BSP.
 private[sbt] object LanguageServerProtocol {
   lazy val internalJsonProtocol = new InitializeOptionFormats with sjsonnew.BasicJsonProtocol {}
 
@@ -93,41 +91,6 @@ private[sbt] object LanguageServerProtocol {
               import sbt.protocol.codec.JsonProtocol._
               val param = Converter.fromJson[CP](json(r)).get
               onCompletionRequest(Option(r.id), param)
-            case r: JsonRpcRequestMessage if r.method == "build/initialize" =>
-              import sbt.internal.buildserver.codec.JsonProtocol._
-              val param = Converter.fromJson[InitializeBuildParams](json(r)).get
-              // TODO: What languages to support?
-              val capabilities = param.capabilities.languageIds.filter(_ == "scala")
-              // TODO: Do we need to distinguish between LSP initialization and BSP?
-              setInitialized(true);
-              jsonRpcRespond(
-                InitializeBuildResult(
-                  "sbt",
-                  "1.0",
-                  "2.0",
-                  BuildServerCapabilities(
-                    CompileProvider(capabilities),
-                    TestProvider(capabilities),
-                    RunProvider(capabilities),
-                    true,
-                    true,
-                    true,
-                    true
-                  ),
-                  None
-                ),
-                Option(r.id)
-              )
-            // TODO: Only do this for BSP requests.
-            case r: JsonRpcRequestMessage if !initialized =>
-              jsonRpcRespondError(
-                Option(r.id),
-                sbt.internal.buildserver.ErrorCodes.NotInitializedError,
-                "The build has not been initialized. The client must sent a build/initialize request as the first request."
-              )
-            case r: JsonRpcRequestMessage if r.method == "workspace/buildTargets" =>
-              appendExec(Exec("bspWorkspaceBuildTargets", None, Some(CommandSource(name))))
-              ()
           }
         }, {
           case n: JsonRpcNotificationMessage if n.method == "textDocument/didSave" =>

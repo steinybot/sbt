@@ -32,14 +32,24 @@ object BuildServerProtocolPlugin extends AutoPlugin {
     state: State =>
       val extracted = state.extract
       state.s.configuration
-      val buildTargets = for {
+      val targets = for {
         (project, ref) <- extracted.structure.allProjectPairs
         configuration <- project.configurations
         // TODO: Support non-Scala targets.
-        buildTarget <- scalaBuildTargets(extracted, project, ref, configuration)
+        buildTarget <- buildTargets(extracted, project, ref, configuration)
       } yield buildTarget
-      state.respondEvent(WorkspaceBuildTargetsResult(buildTargets.toVector))
+      state.respondEvent(WorkspaceBuildTargetsResult(targets.toVector))
       state
+  }
+
+  private def buildTargets(
+      extracted: Extracted,
+      project: ResolvedProject,
+      ref: ProjectRef,
+      configuration: Configuration
+  ): Seq[BuildTarget] = {
+    scalaBuildTargets(extracted, project, ref, configuration) // ++
+    //sbtBuildTargets(extracted)
   }
 
   private def scalaBuildTargets(
@@ -97,7 +107,6 @@ object BuildServerProtocolPlugin extends AutoPlugin {
           extracted.get(sbtBinaryVersion.in(ref, configuration)),
           // TODO: Use correct platform.
           sbt.internal.buildserver.ScalaPlatform.JVM,
-          // TODO: See coursierConfigurationTask
           scalaJars(extracted, ref, configuration)
         )
       )

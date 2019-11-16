@@ -42,6 +42,7 @@ import sbt.internal.librarymanagement.mavenint.{
 import sbt.internal.librarymanagement.{ CustomHttp => _, _ }
 import sbt.internal.nio.{ CheckBuildSources, Globs }
 import sbt.internal.server.{
+  BuildServerProtocol,
   Definition,
   LanguageServerProtocol,
   LanguageServerReporter,
@@ -343,7 +344,7 @@ object Defaults extends BuildCommon {
       },
       serverHandlers :== Nil,
       fullServerHandlers := {
-        (Vector(LanguageServerProtocol.handler)
+        (Vector(LanguageServerProtocol.handler, BuildServerProtocol.handler)
           ++ serverHandlers.value
           ++ Vector(ServerHandler.fallback))
       },
