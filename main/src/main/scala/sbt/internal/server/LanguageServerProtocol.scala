@@ -18,7 +18,7 @@ import sbt.internal.langserver.{ CancelRequestParams => CRP }
 import sbt.internal.protocol._
 import sbt.internal.protocol.codec._
 import sbt.internal.langserver._
-import sbt.internal.buildserver._
+import sbt.internal.buildserver.{ ErrorCodes => _, _ }
 import sbt.internal.util.ObjectEvent
 import sbt.util.Logger
 
@@ -122,7 +122,7 @@ private[sbt] object LanguageServerProtocol {
             case r: JsonRpcRequestMessage if !initialized =>
               jsonRpcRespondError(
                 Option(r.id),
-                -32002,
+                sbt.internal.buildserver.ErrorCodes.NotInitializedError,
                 "The build has not been initialized. The client must sent a build/initialize request as the first request."
               )
             case r: JsonRpcRequestMessage if r.method == "workspace/buildTargets" =>

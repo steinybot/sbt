@@ -14,6 +14,7 @@ import StateServerOps._
 import sbt.internal.buildserver._
 import sbt.internal.buildserver.codec.JsonProtocol._
 import sbt.librarymanagement.Configuration
+import sjsonnew.support.scalajson.unsafe.Converter
 
 /**
  * An experimental plugin that adds commands required to implement the Build Server Protocol.
@@ -30,6 +31,7 @@ object BuildServerProtocolPlugin extends AutoPlugin {
   private def workspaceBuildTargetsCommand: Command = Command.command("bspWorkspaceBuildTargets") {
     state: State =>
       val extracted = state.extract
+      state.s.configuration
       val buildTargets = for {
         (project, ref) <- extracted.structure.allProjectPairs
         configuration <- project.configurations
@@ -46,12 +48,8 @@ object BuildServerProtocolPlugin extends AutoPlugin {
       ref: ProjectRef,
       configuration: Configuration
   ): Seq[BuildTarget] = {
-    getScalaVersions(extracted, ref, configuration) match {
-      case Some(scalaVersions) =>
-        scalaVersions.map { scalaVersion =>
-          scalaBuildTarget(extracted, project, ref, configuration, scalaVersion)
-        }
-      case None => Seq(scalaBuildTarget(extracted, project, ref, configuration))
+    getScalaVersions(extracted, ref, configuration).map { scalaVersion =>
+      scalaBuildTarget(extracted, project, ref, configuration, scalaVersion)
     }
   }
 
@@ -59,10 +57,10 @@ object BuildServerProtocolPlugin extends AutoPlugin {
       extracted: Extracted,
       ref: ProjectRef,
       configuration: Configuration
-  ): Option[Seq[String]] = {
+  ): Seq[String] = {
     return extracted
       .getOpt(crossScalaVersions.in(ref, configuration))
-      .orElse(extracted.getOpt(Keys.scalaVersion.in(ref, configuration)).map(Seq(_)))
+      .getOrElse(extracted.getOpt(Keys.scalaVersion.in(ref, configuration)).toSeq)
   }
 
   private def scalaBuildTarget(
@@ -72,52 +70,37 @@ object BuildServerProtocolPlugin extends AutoPlugin {
       configuration: Configuration,
       scalaVersion: String
   ): BuildTarget = {
-    buildTarget(
-      extracted,
-      project,
-      ref,
-      configuration,
-      // TODO: Figure out what the URI is that we want to use.
-      ref.build + configuration.id + "/" + scalaVersion,
-      project.id + " " + configuration.name + " (" + scalaVersion + ")"
-    )
-  }
-
-  private def scalaBuildTarget(
-      extracted: Extracted,
-      project: ResolvedProject,
-      ref: ProjectRef,
-      configuration: Configuration
-  ): BuildTarget = {
-    buildTarget(
-      extracted,
-      project,
-      ref,
-      configuration,
-      ref.build + configuration.id,
-      project.id + " " + configuration.name
-    )
-  }
-
-  private def buildTarget(
-      extracted: Extracted,
-      project: ResolvedProject,
-      ref: ProjectRef,
-      configuration: Configuration,
-      uri: String,
-      displayName: String
-  ): BuildTarget = {
     BuildTarget(
-      BuildTargetIdentifier(uri),
-      Some(displayName),
-      Some(project.base.getPath()),
+      // TODO: Figure out what the URI is that we want to use.
+      BuildTargetIdentifier(ref.build + configuration.id + "/" + scalaVersion),
+      project.id + " " + configuration.name + " (" + scalaVersion + ")",
+      project.base.getPath(),
       Vector.empty,
       buildTargetCapabilities(extracted, ref, configuration),
-      // TODO: Support other languages.
       Vector("scala"),
+      // TODO: What do we put for dependencies?
       Vector.empty,
-      None,
-      None
+      // TODO: sbt meta builds.
+      // "sbt",
+      // Converter.toJsonUnsafe(
+      //   SbtBuildTarget(
+      //     extracted.get(sbtVersion),
+      //   )
+      // )
+      // TODO: Test for the type (maybe use scalaInstance?).
+      "scala",
+      Converter.toJsonUnsafe(
+        ScalaBuildTarget(
+          extracted.get(scalaOrganization.in(ref, configuration)),
+          scalaVersion,
+          // TODO: How do we handle this for cross builds?
+          extracted.get(sbtBinaryVersion.in(ref, configuration)),
+          // TODO: Use correct platform.
+          sbt.internal.buildserver.ScalaPlatform.JVM,
+          // TODO: See coursierConfigurationTask
+          scalaJars(extracted, ref, configuration)
+        )
+      )
     )
   }
 
@@ -132,5 +115,23 @@ object BuildServerProtocolPlugin extends AutoPlugin {
       extracted.getOpt(test.in(ref, configuration)).nonEmpty,
       extracted.structure.data.get(runKey.scope, run.key).nonEmpty
     )
+  }
+
+  private def scalaJars(
+      extracted: Extracted,
+      ref: ProjectRef,
+      configuration: Configuration
+  ): Vector[String] = {
+    extracted
+      .get(appConfiguration.in(ref, configuration))
+      .provider
+      .scalaProvider
+      .jars
+      .filter { jar =>
+        val name = jar.getName
+        name == "scala-library.jar" || name == "scala-compiler.jar" || name == "scala-reflet.jar"
+      }
+      .map(_.getName)
+      .toVector
   }
 }

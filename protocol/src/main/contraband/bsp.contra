@@ -164,3 +164,51 @@ type WorkspaceBuildTargetsResult {
   ## contain sources with the given language ids
   targets: [sbt.internal.buildserver.BuildTarget]!
 }
+
+# Scala Extension
+
+## Contains scala-specific metadata for compiling a target containing Scala sources.
+## This metadata is embedded in the data: Option[Json] field of the BuildTarget definition,
+## when the dataKind field contains "scala".
+type ScalaBuildTarget {
+  ## The Scala organization that is used for a target.
+  scalaOrganization: String!
+
+  ## The scala version to compile this target
+  scalaVersion: String!
+
+  ## The binary version of scalaVersion.
+  ## For example, 2.12 if scalaVersion is 2.12.4.
+  scalaBinaryVersion: String!
+
+  ## The target platform for this target
+  platform: Int!
+
+  ## A sequence of Scala jars such as scala-library, scala-compiler and scala-reflect.
+  jars: [String]!
+}
+
+# sbt Extension
+
+## Contains sbt-specific metadata for providing editor support for sbt build files.
+## This metadata is embedded in the data: Option[Json] field of the BuildTarget definition
+## when the dataKind field contains "sbt".
+type SbtBuildTarget {
+  ## The sbt version. Useful to support version-dependent syntax.
+  sbtVersion: String!
+
+  ## A sequence of Scala imports that are automatically imported in the sbt build files.
+  autoImports: [String]!
+
+  ## The Scala build target describing the scala
+  ## version and scala jars used by this sbt version.
+  scalaBuildTarget: sbt.internal.buildserver.ScalaBuildTarget!
+
+  ## An optional parent if the target has an sbt meta project.
+  parent: sbt.internal.buildserver.BuildTargetIdentifier
+
+  ## The inverse of parent, list of targets that have this build target
+  ## defined as their parent. It can contain normal project targets or
+  ## sbt build targets if this target represents an sbt meta-meta build.
+  children: [sbt.internal.buildserver.BuildTargetIdentifier]!
+}
